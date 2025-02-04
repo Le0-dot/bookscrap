@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=62.6"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bookscrap"
+dynamic = ["version", "dependencies"]
+requires-python = ">=3.13"
+authors = [
+  {name = "Lev Koliadich", email = "lkolyadich@gmail.com"},
+]
+description = "A modular python application to scrap book from the internet for personal use only"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["webscraping", "books"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python"
+]
+
+[project.urls]
+Repository = "https://github.com/Le0-dot/bookscrap"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
