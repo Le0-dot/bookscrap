@@ -1,10 +1,14 @@
-from importlib.metadata import EntryPoint, EntryPoints, entry_points
-from typing import NamedTuple, Any
+"""
+Small application to scrape books from internet by utilization of plugin system.
+"""
+
 from argparse import ArgumentParser, Namespace
+from importlib.metadata import EntryPoint, EntryPoints, entry_points
+from typing import Any, NamedTuple
 
 from selectolax.parser import HTMLParser
 
-from .protocols import ParserProvider, HTTPDownloader, Callback
+from .protocols import Callback, HTTPDownloader, ParserProvider
 
 
 class Plugins(NamedTuple):
@@ -81,6 +85,7 @@ def download_pages(
             if not callback.handle_parser_exception(exception, url):
                 return
 
+
 def parse_agruments() -> Namespace:
     parser = ArgumentParser()
 
@@ -108,6 +113,7 @@ def main() -> None:
     callback = check_plugin(module, Callback)
 
     download_pages(args.url, provider, downloader, callback)
+
 
 if __name__ == "__main__":
     main()

@@ -1,1 +1,6 @@
+certifi==2025.1.31
+cffi==1.17.1
+curl_cffi==0.7.4
+pycparser==2.22
 selectolax==0.3.27
+typing_extensions==4.12.2

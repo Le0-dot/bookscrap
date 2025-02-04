@@ -4,6 +4,7 @@ Should only be used as reference for writing custom providers.
 """
 
 from re import search
+
 from selectolax.parser import HTMLParser
 
 

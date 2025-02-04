@@ -1,4 +1,9 @@
+"""
+Defenitions of the protocols used by plugins.
+"""
+
 from typing import Protocol, runtime_checkable
+
 from selectolax.parser import HTMLParser
 
 
