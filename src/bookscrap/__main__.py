@@ -1,5 +1,7 @@
 from importlib.metadata import EntryPoint, EntryPoints, entry_points
 from typing import NamedTuple, Any
+from argparse import ArgumentParser, Namespace
+
 from selectolax.parser import HTMLParser
 
 from .protocols import ParserProvider, HTTPDownloader, Callback
@@ -79,22 +81,33 @@ def download_pages(
             if not callback.handle_parser_exception(exception, url):
                 return
 
+def parse_agruments() -> Namespace:
+    parser = ArgumentParser()
+
+    parser.prog = "bookscrap"
+
+    parser.add_argument("--parser-provider", default="default_provider")
+    parser.add_argument("--http-downloader", default="default_downloader")
+    parser.add_argument("--callback", default="default_callback")
+    parser.add_argument("url")
+
+    return parser.parse_args()
+
 
 def main() -> None:
+    args = parse_agruments()
     plugins = find_plugins()
 
-    selected_provider = "default_provider"
-    module = plugins.parser_providers[selected_provider].load()
+    module = plugins.parser_providers[args.parser_provider].load()
     provider = check_plugin(module, ParserProvider)
 
-    selected_downloader = "default_downloader"
-    module = plugins.http_downloaders[selected_downloader].load()
+    module = plugins.http_downloaders[args.http_downloader].load()
     downloader = check_plugin(module, HTTPDownloader)
 
-    selected_callback = "default_callback"
-    module = plugins.callbacks[selected_callback].load()
+    module = plugins.callbacks[args.callback].load()
     callback = check_plugin(module, Callback)
 
-    url = "https://www.fanmtl.com/novel/doomsday-jigsaw-game_1.html"
+    download_pages(args.url, provider, downloader, callback)
 
-    download_pages(url, provider, downloader, callback)
+if __name__ == "__main__":
+    main()
