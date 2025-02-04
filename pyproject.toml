@@ -23,3 +23,6 @@ Repository = "https://github.com/Le0-dot/bookscrap"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
+
+[project.scripts]
+bookscrap = "bookscrap:main"
