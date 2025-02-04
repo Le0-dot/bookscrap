@@ -1,79 +1,100 @@
 from importlib.metadata import EntryPoint, EntryPoints, entry_points
+from typing import NamedTuple, Any
 from selectolax.parser import HTMLParser
 
 from .protocols import ParserProvider, HTTPDownloader, Callback
 
-# Setup default provider and downloader
-default_provider = EntryPoint(
-    name="default_provider",
-    group="bookscrap.parser-provider",
-    value="default.default_provider",
-)
-default_downloader = EntryPoint(
-    name="default_downloader",
-    group="bookscrap.http_downloader",
-    value="default.default_downloader",
-)
-default_callback = EntryPoint(
-    name="default_callback",
-    group="bookscrap.callback",
-    value="default.default_callback",
-)
 
-# Find all installed PraserProviders and HTTPDownloaders and append default ones
-parser_providers = EntryPoints(
-    (*entry_points(group="bookscrap.parser-provider"), default_provider)
-)
-http_downloaders = EntryPoints(
-    (*entry_points(group="bookscrap.http-downloader"), default_downloader)
-)
-callbacks = EntryPoints((*entry_points(group="bookscrap.callback"), default_callback))
+class Plugins(NamedTuple):
+    parser_providers: EntryPoints
+    http_downloaders: EntryPoints
+    callbacks: EntryPoints
 
-selected_provider = "default_provider"
-selected_downloader = "default_downloader"
-selected_callback = "default_callback"
 
-# Select provider and downloader
-provider = parser_providers[selected_provider].load()
-downloader = http_downloaders[selected_downloader].load()
-callback = callbacks[selected_callback].load()
-
-# Check for protocol conformation
-if not isinstance(provider, ParserProvider):
-    raise RuntimeError(
-        f"{selected_provider} does not conform to ParserProvider protocol"
+def find_plugins() -> Plugins:
+    # Setup default plugin implementations
+    default_provider = EntryPoint(
+        name="default_provider",
+        group="bookscrap.parser-provider",
+        value=f"{__package__}.default.default_provider",
+    )
+    default_downloader = EntryPoint(
+        name="default_downloader",
+        group="bookscrap.http-downloader",
+        value=f"{__package__}.default.default_downloader",
+    )
+    default_callback = EntryPoint(
+        name="default_callback",
+        group="bookscrap.callback",
+        value=f"{__package__}.default.default_callback",
     )
 
-if not isinstance(downloader, HTTPDownloader):
-    raise RuntimeError(
-        f"{selected_downloader} does not conform to HTTPDownloader protocol"
+    # Find all installed plugins and append default ones
+    parser_providers = EntryPoints(
+        (*entry_points(group="bookscrap.parser-provider"), default_provider)
+    )
+    http_downloaders = EntryPoints(
+        (*entry_points(group="bookscrap.http-downloader"), default_downloader)
+    )
+    callbacks = EntryPoints(
+        (*entry_points(group="bookscrap.callback"), default_callback)
     )
 
-if not isinstance(callback, Callback):
-    raise RuntimeError(f"{selected_callback} does not conform to Callback protocol")
+    return Plugins(parser_providers, http_downloaders, callbacks)
 
-# Download all available pages
-url: str | None = "https://www.fanmtl.com/novel/doomsday-jigsaw-game_1.html"
 
-while url is not None:
-    try:
-        html_response = downloader.download(url)
-    except Exception as exception:
-        # Handle exception and stop execution
-        callback.handle_download_exception(exception, url)
-        break
+def check_plugin[T](module: Any, protocol: type[T]) -> T:
+    if not isinstance(module, protocol):
+        raise RuntimeError(
+            f"{module.__name__} does not conform to {protocol.__name__} protocol"
+        )
+    return module
 
-    tree = HTMLParser(html_response)
 
-    try:
-        title = provider.extract_title(tree)
-        text = provider.extract_text(tree)
-        new_url = provider.extract_next_page(tree, url)
-        number = provider.extract_number(tree, url)
+def download_pages(
+    start_url: str,
+    parser_provider: ParserProvider,
+    http_downloader: HTTPDownloader,
+    callback: Callback,
+) -> None:
+    url: str | None = start_url
+    while url is not None:
+        try:
+            html_response = http_downloader.download(url)
+        except Exception as exception:
+            callback.handle_download_exception(exception, url)
+            return
 
-        callback.handle_success(title, text, number)
-        url = new_url
-    except Exception as exception:
-        # Handle exception and possibly stop execution or skip current page
-        if not callback.handle_parser_exception(exception, url):
-            break
+        tree = HTMLParser(html_response)
+
+        try:
+            title = parser_provider.extract_title(tree)
+            text = parser_provider.extract_text(tree)
+            new_url = parser_provider.extract_next_page(tree, url)
+            number = parser_provider.extract_number(tree, url)
+
+            callback.handle_success(title, text, number)
+            url = new_url
+        except Exception as exception:
+            if not callback.handle_parser_exception(exception, url):
+                return
+
+
+def main() -> None:
+    plugins = find_plugins()
+
+    selected_provider = "default_provider"
+    module = plugins.parser_providers[selected_provider].load()
+    provider = check_plugin(module, ParserProvider)
+
+    selected_downloader = "default_downloader"
+    module = plugins.http_downloaders[selected_downloader].load()
+    downloader = check_plugin(module, HTTPDownloader)
+
+    selected_callback = "default_callback"
+    module = plugins.callbacks[selected_callback].load()
+    callback = check_plugin(module, Callback)
+
+    url = "https://www.fanmtl.com/novel/doomsday-jigsaw-game_1.html"
+
+    download_pages(url, provider, downloader, callback)
