@@ -77,9 +77,9 @@ def download_pages(
             title = parser_provider.extract_title(tree)
             text = parser_provider.extract_text(tree)
             new_url = parser_provider.extract_next_page(tree, url)
-            number = parser_provider.extract_number(tree, url)
+            identifier = parser_provider.extract_identifier(tree, url)
 
-            callback.handle_success(title, text, number)
+            callback.handle_success(title, text, identifier)
             url = new_url
         except Exception as exception:
             if not callback.handle_parser_exception(exception, url):

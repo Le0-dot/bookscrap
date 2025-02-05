@@ -7,8 +7,8 @@ Skips page if any errors were encountered during parsing.
 from sys import stderr
 
 
-def handle_success(title: str, text: str, number: int) -> None:
-    with open(f"{number:03d}.txt", encoding="utf-8", mode="w") as file:
+def handle_success(title: str, text: str, identifier: str) -> None:
+    with open(f"{identifier:03}.txt", encoding="utf-8", mode="w") as file:
         file.writelines([title, "\n", text])
 
 

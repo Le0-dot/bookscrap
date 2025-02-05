@@ -20,7 +20,7 @@ def extract_next_page(tree: HTMLParser, _: str) -> str | None:
     return tree.css_first("a.next").attributes["href"]
 
 
-def extract_number(tree: HTMLParser, _: str) -> int:
+def extract_identifier(tree: HTMLParser, _: str) -> str:
     if (match := search(r"(\d+)", extract_title(tree))) is None:
-        return -1
-    return int(match.group())
+        return "None"
+    return match.group()
