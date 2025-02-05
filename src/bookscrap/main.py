@@ -4,58 +4,11 @@ Small application to scrape books from internet by utilization of plugin system.
 
 import asyncio
 from argparse import ArgumentParser, Namespace
-from importlib.metadata import EntryPoint, EntryPoints, entry_points
-from typing import Any, NamedTuple
 
 from selectolax.parser import HTMLParser
 
-from .protocols import AsyncCallback, AsyncHTTPDownloader, ParserProvider
-
-
-class Plugins(NamedTuple):
-    parser_providers: EntryPoints
-    http_downloaders: EntryPoints
-    callbacks: EntryPoints
-
-
-def find_plugins() -> Plugins:
-    # Setup default plugin implementations
-    default_provider = EntryPoint(
-        name="default_provider",
-        group="bookscrap.parser-provider",
-        value=f"{__package__}.default.default_provider",
-    )
-    default_downloader = EntryPoint(
-        name="default_downloader",
-        group="bookscrap.http-downloader",
-        value=f"{__package__}.default.default_downloader",
-    )
-    default_callback = EntryPoint(
-        name="default_callback",
-        group="bookscrap.callback",
-        value=f"{__package__}.default.default_callback",
-    )
-
-    # Find all installed plugins and append default ones
-    parser_providers = EntryPoints(
-        (*entry_points(group="bookscrap.parser-provider"), default_provider)
-    )
-    http_downloaders = EntryPoints(
-        (*entry_points(group="bookscrap.http-downloader"), default_downloader)
-    )
-    callbacks = EntryPoints(
-        (*entry_points(group="bookscrap.callback"), default_callback)
-    )
-
-    return Plugins(parser_providers, http_downloaders, callbacks)
-
-
-def check_plugin[T](module: Any, protocol: type[T]) -> T:
-    if not isinstance(module, protocol):
-        raise RuntimeError(
-            f"{module.__name__} does not conform to {protocol.__name__} protocol"
-        )
-    return module
+from .plugins.manager import PluginManager
+from .plugins.protocols import AsyncCallback, AsyncHTTPDownloader, ParserProvider
 
 
 async def download_pages(
@@ -124,15 +77,10 @@ def parse_agruments() -> Namespace:
 
 def main() -> None:
     args = parse_agruments()
-    plugins = find_plugins()
+    plugin_manager = PluginManager()
 
-    module = plugins.parser_providers[args.parser_provider].load()
-    provider = check_plugin(module, ParserProvider)
-
-    module = plugins.http_downloaders[args.http_downloader].load()
-    downloader = check_plugin(module, AsyncHTTPDownloader)
-
-    module = plugins.callbacks[args.callback].load()
-    callback = check_plugin(module, AsyncCallback)
+    provider = plugin_manager.load(ParserProvider, args.parser_provider)
+    downloader = plugin_manager.load(AsyncHTTPDownloader, args.http_downloader)
+    callback = plugin_manager.load(AsyncCallback, args.callback)
 
     asyncio.run(download_pages(args.url, provider, downloader, callback, args.timeout))
