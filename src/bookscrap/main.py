@@ -63,6 +63,7 @@ async def download_pages(
     parser_provider: ParserProvider,
     http_downloader: AsyncHTTPDownloader,
     callback: AsyncCallback,
+    timeout_seconds: float,
 ) -> None:
     url: str | None = start_url
     while url is not None:
@@ -87,6 +88,8 @@ async def download_pages(
             if not to_continue:
                 return
 
+        await asyncio.sleep(timeout_seconds)
+
 
 def parse_agruments() -> Namespace:
     parser = ArgumentParser()
@@ -108,6 +111,12 @@ def parse_agruments() -> Namespace:
         default="default_callback",
         help="name of the plugin with callback",
     )
+    parser.add_argument(
+        "--timeout",
+        default=3,
+        type=float,
+        help="timeout in seconds for stop between processing the pages",
+    )
     parser.add_argument("url")
 
     return parser.parse_args()
@@ -126,4 +135,4 @@ def main() -> None:
     module = plugins.callbacks[args.callback].load()
     callback = check_plugin(module, AsyncCallback)
 
-    asyncio.run(download_pages(args.url, provider, downloader, callback))
+    asyncio.run(download_pages(args.url, provider, downloader, callback, args.timeout))
