@@ -3,13 +3,15 @@ Default http downloader.
 Could be used in simple cases, where there is no anti-bot protection.
 """
 
-from curl_cffi.requests import Session
+from curl_cffi.requests import AsyncSession
 
-session = Session(impersonate="chrome")
+session = AsyncSession(impersonate="chrome")
 
 
-def download(url: str) -> str:
-    return session.get(url).text
+async def download(url: str) -> str:
+    response = await session.get(url)
+    return response.text
 
-def cleanup() -> None:
-    session.close()
+
+async def cleanup() -> None:
+    await session.close()

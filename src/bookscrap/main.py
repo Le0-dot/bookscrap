@@ -2,13 +2,14 @@
 Small application to scrape books from internet by utilization of plugin system.
 """
 
+import asyncio
 from argparse import ArgumentParser, Namespace
 from importlib.metadata import EntryPoint, EntryPoints, entry_points
 from typing import Any, NamedTuple
 
 from selectolax.parser import HTMLParser
 
-from .protocols import Callback, HTTPDownloader, ParserProvider
+from .protocols import AsyncCallback, AsyncHTTPDownloader, ParserProvider
 
 
 class Plugins(NamedTuple):
@@ -57,18 +58,18 @@ def check_plugin[T](module: Any, protocol: type[T]) -> T:
     return module
 
 
-def download_pages(
+async def download_pages(
     start_url: str,
     parser_provider: ParserProvider,
-    http_downloader: HTTPDownloader,
-    callback: Callback,
+    http_downloader: AsyncHTTPDownloader,
+    callback: AsyncCallback,
 ) -> None:
     url: str | None = start_url
     while url is not None:
         try:
-            html_response = http_downloader.download(url)
+            html_response = await http_downloader.download(url)
         except Exception as exception:
-            callback.handle_download_exception(exception, url)
+            await callback.handle_download_exception(exception, url)
             return
 
         tree = HTMLParser(html_response)
@@ -79,10 +80,11 @@ def download_pages(
             new_url = parser_provider.extract_next_page(tree, url)
             identifier = parser_provider.extract_identifier(tree, url)
 
-            callback.handle_success(title, text, identifier)
+            await callback.handle_success(title, text, identifier)
             url = new_url
         except Exception as exception:
-            if not callback.handle_parser_exception(exception, url):
+            to_continue = await callback.handle_parser_exception(exception, url)
+            if not to_continue:
                 return
 
 
@@ -119,9 +121,9 @@ def main() -> None:
     provider = check_plugin(module, ParserProvider)
 
     module = plugins.http_downloaders[args.http_downloader].load()
-    downloader = check_plugin(module, HTTPDownloader)
+    downloader = check_plugin(module, AsyncHTTPDownloader)
 
     module = plugins.callbacks[args.callback].load()
-    callback = check_plugin(module, Callback)
+    callback = check_plugin(module, AsyncCallback)
 
-    download_pages(args.url, provider, downloader, callback)
+    asyncio.run(download_pages(args.url, provider, downloader, callback))

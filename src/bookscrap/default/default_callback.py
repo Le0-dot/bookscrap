@@ -6,16 +6,30 @@ Skips page if any errors were encountered during parsing.
 
 from sys import stderr
 
-
-def handle_success(title: str, text: str, identifier: str) -> None:
-    with open(f"{identifier:03}.txt", encoding="utf-8", mode="w") as file:
-        file.writelines([title, "\n", text])
+import aiofiles
 
 
-def handle_download_exception(exception: Exception, url: str) -> None:
-    print(f"Encountered error during processing of {url}: {exception}", file=stderr)
+async def handle_success(title: str, text: str, identifier: str) -> None:
+    async with aiofiles.open(
+        f"{identifier:03}.txt", encoding="utf-8", mode="w"
+    ) as file:
+        await file.write(title)
+        await file.write("\n")
+        await file.write(text)
 
 
-def handle_parser_exception(exception: Exception, url: str) -> bool:
-    print(f"Encountered error during processing of {url}: {exception}", file=stderr)
+async def handle_download_exception(exception: Exception, url: str) -> None:
+    print(
+        f"Encountered error during processing of {url}: {exception}",
+        file=stderr,
+        flush=True,
+    )
+
+
+async def handle_parser_exception(exception: Exception, url: str) -> bool:
+    print(
+        f"Encountered error during processing of {url}: {exception}",
+        file=stderr,
+        flush=True,
+    )
     return True
