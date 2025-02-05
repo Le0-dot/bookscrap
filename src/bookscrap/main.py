@@ -75,12 +75,12 @@ async def download_pages(
         tree = HTMLParser(html_response)
 
         try:
+            identifier = parser_provider.extract_identifier(tree, url)
             title = parser_provider.extract_title(tree)
             text = parser_provider.extract_text(tree)
             new_url = parser_provider.extract_next_page(tree, url)
-            identifier = parser_provider.extract_identifier(tree, url)
 
-            await callback.handle_success(title, text, identifier)
+            await callback.handle_success(identifier, title, text)
             url = new_url
         except Exception as exception:
             to_continue = await callback.handle_parser_exception(exception, url)

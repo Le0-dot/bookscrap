@@ -9,7 +9,7 @@ from sys import stderr
 import aiofiles
 
 
-async def handle_success(title: str, text: str, identifier: str) -> None:
+async def handle_success(identifier: str, title: str, text: str) -> None:
     async with aiofiles.open(
         f"{identifier:03}.txt", encoding="utf-8", mode="w"
     ) as file:

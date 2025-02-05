@@ -10,6 +10,9 @@ from selectolax.parser import HTMLParser
 @runtime_checkable
 class ParserProvider(Protocol):
     @staticmethod
+    def extract_identifier(tree: HTMLParser, url: str) -> str: ...
+
+    @staticmethod
     def extract_title(tree: HTMLParser) -> str: ...
 
     @staticmethod
@@ -17,9 +20,6 @@ class ParserProvider(Protocol):
 
     @staticmethod
     def extract_next_page(tree: HTMLParser, url: str) -> str | None: ...
-
-    @staticmethod
-    def extract_identifier(tree: HTMLParser, url: str) -> str: ...
 
 
 @runtime_checkable
@@ -34,7 +34,7 @@ class AsyncHTTPDownloader(Protocol):
 @runtime_checkable
 class AsyncCallback(Protocol):
     @staticmethod
-    async def handle_success(title: str, text: str, identifier: str) -> None: ...
+    async def handle_success(identifier: str, title: str, text: str) -> None: ...
 
     @staticmethod
     async def handle_download_exception(exception: Exception, url: str) -> None: ...
