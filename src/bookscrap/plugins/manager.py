@@ -25,8 +25,8 @@ class PluginManager:
     @property
     def config(self) -> dict[type, str]:
         return {
-            ParserProvider: "bookscrap.parser-provider",
-            AsyncHTTPDownloader: "bookscrap.http-downloader",
+            ParserProvider: "bookscrap.parser_provider",
+            AsyncHTTPDownloader: "bookscrap.http_downloader",
             AsyncCallback: "bookscrap.callback",
         }
 
@@ -35,17 +35,17 @@ class PluginManager:
         return {
             ParserProvider: EntryPoint(
                 name="default_provider",
-                group="bookscrap.parser-provider",
+                group=self.config[ParserProvider],
                 value=f"{__package__}.defaults.default_provider",
             ),
             AsyncHTTPDownloader: EntryPoint(
                 name="default_downloader",
-                group="bookscrap.http-downloader",
+                group=self.config[AsyncHTTPDownloader],
                 value=f"{__package__}.defaults.default_downloader",
             ),
             AsyncCallback: EntryPoint(
                 name="default_callback",
-                group="bookscrap.callback",
+                group=self.config[AsyncCallback],
                 value=f"{__package__}.defaults.default_callback",
             ),
         }
